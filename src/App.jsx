@@ -23,6 +23,7 @@ const App = () => {
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(true);
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -74,6 +75,38 @@ const App = () => {
       };
     }
   }, []);
+
+  // Update audio loading handler with better initial load handling
+  useEffect(() => {
+    const handleInitialLoad = () => {
+      setIsAudioLoading(false);
+      setDuration(audioRef.current.duration);
+    };
+
+    if (audioRef.current) {
+      setIsAudioLoading(true); // Set loading state when track changes
+      
+      const handleLoadStart = () => setIsAudioLoading(true);
+      const handleCanPlay = () => setIsAudioLoading(false);
+      
+      audioRef.current.addEventListener('loadstart', handleLoadStart);
+      audioRef.current.addEventListener('canplay', handleCanPlay);
+      audioRef.current.addEventListener('loadedmetadata', handleInitialLoad);
+      
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('loadstart', handleLoadStart);
+          audioRef.current.removeEventListener('canplay', handleCanPlay);
+          audioRef.current.removeEventListener('loadedmetadata', handleInitialLoad);
+        }
+      };
+    }
+  }, [currentTrack]);
+
+  // Add this effect to handle track changes
+  useEffect(() => {
+    setIsAudioLoading(true);
+  }, [currentTrack]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -200,17 +233,17 @@ const App = () => {
                       [&::-webkit-slider-thumb]:rounded-full
                       [&::-webkit-slider-thumb]:bg-emerald-500
                       hover:[&::-webkit-slider-thumb]:bg-emerald-400
-                      ${isBuffering ? 'opacity-50' : ''}`}
+                      ${isAudioLoading ? 'opacity-50' : ''}`}
                   />
-                  {isBuffering && (
+                  {isAudioLoading && (
                     <div className="absolute inset-0 overflow-hidden rounded-full">
-                      <div className="h-full bg-emerald-500/20 animate-buffering" />
+                      <div className="h-full w-1/3 bg-emerald-500/20 animate-loading-bar" />
                     </div>
                   )}
                 </div>
                 <div className="flex justify-between text-xs text-zinc-400">
-                  <span>{formatTime(currentTime)}</span>
-                  <span>{isBuffering ? 'Loading...' : formatTime(duration)}</span>
+                  <span>{isAudioLoading ? '--:--' : formatTime(currentTime)}</span>
+                  <span>{isAudioLoading ? '--:--' : formatTime(duration)}</span>
                 </div>
               </div>
 
@@ -330,6 +363,7 @@ const App = () => {
         src={tracks[currentTrack].url}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
+        onLoadedData={() => setIsAudioLoading(false)}
         onEnded={handleEnded}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
