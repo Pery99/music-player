@@ -22,6 +22,7 @@ const App = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
   const audioRef = useRef(null);
 
   useEffect(() => {
@@ -55,6 +56,24 @@ const App = () => {
       };
     }
   }, [currentTrack]);
+
+  // Add buffering detection
+  useEffect(() => {
+    if (audioRef.current) {
+      const audio = audioRef.current;
+      
+      const handleWaiting = () => setIsBuffering(true);
+      const handlePlaying = () => setIsBuffering(false);
+      
+      audio.addEventListener('waiting', handleWaiting);
+      audio.addEventListener('playing', handlePlaying);
+      
+      return () => {
+        audio.removeEventListener('waiting', handleWaiting);
+        audio.removeEventListener('playing', handlePlaying);
+      };
+    }
+  }, []);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -167,25 +186,31 @@ const App = () => {
 
               {/* Progress Bar */}
               <div className="mb-8 space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 relative">
                   <input
                     type="range"
                     min="0"
                     max="100"
                     value={progress}
                     onChange={handleSeek}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer bg-zinc-700
+                    className={`w-full h-2 rounded-full appearance-none cursor-pointer bg-zinc-700
                       [&::-webkit-slider-thumb]:appearance-none
                       [&::-webkit-slider-thumb]:w-3
                       [&::-webkit-slider-thumb]:h-3
                       [&::-webkit-slider-thumb]:rounded-full
                       [&::-webkit-slider-thumb]:bg-emerald-500
-                      hover:[&::-webkit-slider-thumb]:bg-emerald-400"
+                      hover:[&::-webkit-slider-thumb]:bg-emerald-400
+                      ${isBuffering ? 'opacity-50' : ''}`}
                   />
+                  {isBuffering && (
+                    <div className="absolute inset-0 overflow-hidden rounded-full">
+                      <div className="h-full bg-emerald-500/20 animate-buffering" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-between text-xs text-zinc-400">
                   <span>{formatTime(currentTime)}</span>
-                  <span>{formatTime(duration)}</span>
+                  <span>{isBuffering ? 'Loading...' : formatTime(duration)}</span>
                 </div>
               </div>
 
@@ -216,7 +241,9 @@ const App = () => {
 
                   <button
                     onClick={togglePlay}
-                    className="p-4 bg-emerald-500 rounded-full hover:bg-emerald-600 transition-colors"
+                    disabled={isBuffering}
+                    className={`p-4 bg-emerald-500 rounded-full transition-colors
+                      ${isBuffering ? 'opacity-50 cursor-wait' : 'hover:bg-emerald-600'}`}
                   >
                     {isPlaying ? (
                       <BsPauseFill size={32} className="text-white" />
