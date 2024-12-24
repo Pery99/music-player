@@ -108,6 +108,15 @@ const App = () => {
     setIsAudioLoading(true);
   }, [currentTrack]);
 
+  // Add effect to handle auto-play on track change
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(console.error);
+    }
+  }, [currentTrack]);
+
   const togglePlay = () => {
     if (isPlaying) {
       audioRef.current.pause();
@@ -136,19 +145,27 @@ const App = () => {
     setProgress(e.target.value);
   };
 
+  // Update handleNext to handle shuffle properly
   const handleNext = () => {
     if (shuffle) {
-      const nextIndex = Math.floor(Math.random() * tracks.length);
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * tracks.length);
+      } while (nextIndex === currentTrack && tracks.length > 1);
       setCurrentTrack(nextIndex);
     } else {
       setCurrentTrack((prev) => (prev + 1) % tracks.length);
     }
+    setIsPlaying(true); // Ensure playing state is set
   };
 
+  // Update handleEnded to properly handle repeat and shuffle
   const handleEnded = () => {
     if (repeat) {
       audioRef.current.currentTime = 0;
-      audioRef.current.play();
+      audioRef.current.play()
+        .then(() => setIsPlaying(true))
+        .catch(console.error);
     } else {
       handleNext();
     }
@@ -156,6 +173,15 @@ const App = () => {
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
+  };
+
+  // Update control button handlers
+  const toggleShuffle = () => {
+    setShuffle(prev => !prev);
+  };
+
+  const toggleRepeat = () => {
+    setRepeat(prev => !prev);
   };
 
   if (isLoading) {
@@ -251,7 +277,7 @@ const App = () => {
               <div className="flex flex-col gap-6">
                 <div className="flex items-center justify-center md:justify-start gap-6">
                   <button
-                    onClick={() => setShuffle(!shuffle)}
+                    onClick={toggleShuffle}
                     className={`p-2 transition-colors ${
                       shuffle
                         ? "text-emerald-500"
@@ -295,7 +321,7 @@ const App = () => {
                   </button>
 
                   <button
-                    onClick={() => setRepeat(!repeat)}
+                    onClick={toggleRepeat}
                     className={`p-2 transition-colors ${
                       repeat
                         ? "text-emerald-500"
