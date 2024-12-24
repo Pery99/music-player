@@ -1,8 +1,9 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { BsPlayFill, BsPauseFill, BsClock } from "react-icons/bs";
+import { IoMdRepeat, IoMdShuffle } from "react-icons/io";
 
-const MusicCard = ({ track, isPlaying, isActive, onClick }) => {
+const MusicCard = ({ track, isPlaying, isActive, onClick, isRepeating, isShuffling }) => {
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -49,12 +50,29 @@ const MusicCard = ({ track, isPlaying, isActive, onClick }) => {
           >
             {track.title}
           </h3>
-          <p className="text-sm text-zinc-400">{track.artist}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-zinc-400">{track.artist}</p>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">
+              {track.genre}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-zinc-500 text-sm">
-          <BsClock />
-          <span>{formatDuration(track.duration)}</span>
+        <div className="flex items-center gap-2">
+          {isActive && (
+            <>
+              {isRepeating && (
+                <IoMdRepeat className="text-emerald-500" size={16} />
+              )}
+              {isShuffling && (
+                <IoMdShuffle className="text-emerald-500" size={16} />
+              )}
+            </>
+          )}
+          <div className="flex items-center gap-2 text-zinc-500 text-sm">
+            <BsClock />
+            <span>{formatDuration(track.duration)}</span>
+          </div>
         </div>
       </div>
     </motion.div>
